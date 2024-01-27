@@ -14,7 +14,11 @@ import {
     getFirestore,
     doc, 
     getDoc,
-    setDoc
+    setDoc,
+    collection,
+    writeBatch,
+    query,
+    getDocs
 } from 'firebase/firestore'
 
 
@@ -42,6 +46,39 @@ const firebaseConfig = {
   export let signInWithGoogleRedirect = () => signInWithRedirect(auth, provider)
 
   export let db = getFirestore( )
+
+  export let addCollectionAndDocuments = async (collectionKey, objectsToAdd) => {
+    let collectionRef = collection(db, collectionKey);
+    let batch = writeBatch(db)
+
+    objectsToAdd.forEach(object => {
+      let docRef = doc(collectionRef, object.title.toLowerCase())
+      batch.set(docRef, object);
+    });
+
+    await batch.commit();
+    console.log('done')
+  }
+
+  // the reduce part of this code confuses me a bit
+
+  export let getCategoriesAndDocuments = async () => {
+    let collectionRef = collection(db, 'categories')
+    let q = query(collectionRef)
+
+    let querySnapShot = await getDocs(q);
+    let categoryMap = querySnapShot.docs.reduce((acc, docSnapShot) => {
+      let { title, items } = docSnapShot.data();
+      acc[title.toLowerCase()] = items;
+      return acc;
+    }, {});
+
+    return categoryMap
+
+  }
+
+
+
 
   export let createuserDocumentFromAuth = async (userAuth, additionalInformation) => {
     let userDocRef = doc(db, 'users', userAuth.uid)
